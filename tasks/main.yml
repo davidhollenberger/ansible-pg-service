@@ -1,0 +1,51 @@
+---
+
+- name: Gather facts on Postgres EC2 instances
+  ec2_instance_facts:
+    region: "{{ aws_region }}"
+    filters:
+      "tag:type": pg
+  register: pg_hosts
+
+# - debug: var=pg_hosts
+
+- name: Add PG instance private IPs to in-memory group
+  add_host:
+    hostname: "{{ item.private_ip_address }}"
+    groups: pg_hosts
+  loop: "{{ pg_hosts.instances }}"
+  loop_control:
+    label: "{{ item.private_ip_address }}"
+
+- name: Get list of databases
+  raw: psql -d postgres -A -t -c "SELECT datname FROM pg_database WHERE datistemplate = false;" | sed -e '$d'
+  delegate_to: "{{ item }}"
+  # delegate_facts: true
+  loop: "{{ groups['pg_hosts'] }}"
+  register: pg_databases
+
+# - debug: msg="{{ hostvars[item.item] }}"
+#   loop: "{{ pg_databases.results }}"
+
+# - debug: msg="{{ item.private_ip_address }}"
+#   loop: "{{ pg_hosts.instances }}"
+
+# - debug: msg="{{ hostvars[item] }}"
+#   loop: "{{ groups['pg_hosts'] }}"
+
+- name: Gather facts on Redshift clusters
+  redshift_facts:
+    region: "{{ aws_region }}"
+  register: redshift_facts
+  tags: redshift
+
+# - debug: msg="{{ item.cluster_identifier }} - {{ item.db_name }} - {{ item.master_username }} - {{ item.endpoint.address }}"
+#   loop: "{{ redshift_facts.results }}"
+#   tags: redshift
+
+- name: Template .pg_service.conf
+  template:
+    src: pg_service.j2
+    dest: "{{ pg_service_path }}/.pg_service.conf"
+    mode: 0600
+    backup: true

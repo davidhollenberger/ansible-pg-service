@@ -1,0 +1,14 @@
+---
+
+aws_region: us-east-1
+
+pg_service_path: "{{ lookup('env','HOME') }}"
+pg_port: 5432
+pg_user: postgres
+
+# duplicate database names need to be unique in pg_service.conf
+# list any duplicate databases here
+# the script will add additional identifiers to the service name.
+common_postgres_databases:
+  - postgres
+  - pgss_hist

@@ -1,0 +1,8 @@
+---
+# usage: ansible-playbook pg_service.yml
+
+- name: Generate pg_service.conf
+  hosts: localhost
+  connection: local
+  roles:
+    - role: ansible-pg-service
